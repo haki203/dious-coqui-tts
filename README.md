@@ -27,7 +27,34 @@ Kiểm tra phiên bản:
 yarn --version
 ```
 
-## 4. Tạo và kích hoạt virtual environment (khuyến nghị)
+## 3.1. Cài đặt GitHub CLI (gh)
+
+Nếu chưa có GitHub CLI, bạn nên cài để dễ thao tác với GitHub từ dòng lệnh:
+
+- Tải và cài đặt theo hướng dẫn tại: https://cli.github.com/manual/installation
+- Hoặc trên Windows, có thể dùng lệnh sau (nếu đã cài winget):
+  ```bash
+  winget install --id GitHub.cli
+  ```
+- Kiểm tra phiên bản:
+  ```bash
+  gh --version
+  ```
+
+## 3.2. Clone repository về máy
+
+Sau khi đã cài GitHub CLI hoặc Git, bạn có thể clone repo về máy bằng lệnh:
+
+```bash
+git clone https://github.com/haki203/dious-coqui-tts.git
+```
+Sau đó, di chuyển vào thư mục dự án:
+
+```bash
+cd dious-coqui-tts
+```
+
+## 4. Tạo và kích hoạt virtual environment (bắt buộc nếu có nhiều ver python. còn nếu chỉ có python 3.10 thì ko cần)
 
 ```bash
 python -m venv venv
@@ -55,6 +82,13 @@ pip install -r requirements.txt
 **Lưu ý:**
 - Nếu gặp lỗi thiếu `ffmpeg`, hãy cài đặt ffmpeg (bắt buộc cho pydub):
   - Windows: tải tại https://ffmpeg.org/download.html, giải nén và thêm vào PATH.
+- Nếu bạn muốn luôn cài sẵn torch (dùng cho GPU hoặc một số model TTS), có thể thêm dòng sau vào requirements.txt:
+  ```txt
+  torch
+  ```
+  Tuy nhiên, torch cũng có thể cài riêng theo hướng dẫn ở mục 6 để phù hợp với GPU của bạn.
+- ffmpeg là phần mềm ngoài, bắt buộc phải cài để pydub hoạt động. Đã hướng dẫn chi tiết ở trên.
+- Các model TTS sẽ được tự động tải về khi bạn chọn lần đầu trong giao diện, không cần cài đặt thủ công.
 
 ## 6. (Tùy chọn) Cài đặt thêm cho GPU
 
