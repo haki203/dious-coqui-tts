@@ -85,7 +85,8 @@ Giao diện sẽ hiện ra, làm theo các bước:
   - Đảm bảo có kết nối internet để tải model lần đầu.
 - **Lỗi CUDA:**
   - Nếu không có GPU hoặc GPU ko đc setup để hỗ trợ thì phần mềm sẽ tự động chuyển sang CPU.
-
+- **Lỗi Test voice:**
+  - một số model chưa hỗ trợ test trực tiếp trên tool, muốn test thì tạo 1 file mp3 rồi mở ra nghe
 ## 9. Liên hệ hỗ trợ
 
 Nếu gặp lỗi không giải quyết được, hãy gửi ảnh chụp màn hình lỗi và mô tả hệ điều hành, phiên bản Python, các bước đã làm tới người phát triển. 
