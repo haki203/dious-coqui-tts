@@ -1,0 +1,19 @@
+# Core TTS libraries
+TTS==0.21.1
+torch==2.1.0
+numpy==1.22.0
+
+# Audio processing
+pydub==0.25.1
+sounddevice==0.4.6
+# soundfile>=0.12.1  # Comment lại vì có vấn đề với Python 3.10
+
+# GUI
+# tkinter  # Comment lại vì đã có sẵn trong Python
+
+# Utilities
+# uuid>=1.30  # Comment lại vì đã có sẵn trong Python
+# functools-lru-cache>=1.6.4  # Comment lại vì đã có sẵn trong Python
+
+# Optional but recommended for better performance
+# cuda-python>=12.0.0  # Comment lại vì có thể gây lỗi 

@@ -12,6 +12,8 @@ from pydub.playback import play
 from TTS.utils.manage import ModelManager  # type: ignore
 from functools import lru_cache
 import uuid
+import sounddevice as sd  # Thêm thư viện sounddevice
+import queue  # Thêm queue để xử lý buffer âm thanh
 
 # Tự động lấy danh sách models mới nhất
 all_models = ModelManager().list_models()
@@ -103,10 +105,6 @@ def update_speaker_list():
         speaker_var.set("")
         speaker_label.pack_forget()
         speaker_menu.pack_forget()
-    # Luôn luôn hiển thị ô nhập văn bản test và nút Test Voice
-    test_text_label.pack(pady=10)
-    test_text_entry.pack(pady=5)
-    test_button.pack(pady=5)
 
 
 # Thêm biến speed_var để chọn tốc độ đọc
@@ -120,38 +118,126 @@ progress_label = None
 
 def test_voice():
     try:
+        print("Bắt đầu test voice...")
+        
+        # Kiểm tra xem user đã chọn file txt chưa
+        txt_file = txt_file_entry.get()
+        if not txt_file:
+            messagebox.showerror("Lỗi", "Vui lòng chọn file txt trước khi test giọng.")
+            return
+        
+        if not os.path.exists(txt_file):
+            messagebox.showerror("Lỗi", "File txt không tồn tại.")
+            return
+            
+        # Lấy danh sách các speaker của model hiện tại
         model_name = model_var.get()
-        speaker = speaker_var.get() if speaker_var.get() else None
-        tts = get_tts(model_name)
-        text = test_text_var.get()
-        speed = float(speed_var.get()) if speed_var else 0.9
-        # Truyền speed nếu model hỗ trợ
-        try:
-            result = tts.tts(
-                text=text, speaker=speaker if speaker else None, speed=speed
-            )
-        except TypeError:
-            result = tts.tts(text=text, speaker=speaker if speaker else None)
-        if isinstance(result, (tuple, list)):
-            wav = result[0]
+        speakers = get_speakers(model_name)
+        
+        if not speakers:
+            # Nếu model không có nhiều speaker, sử dụng None
+            test_for_model(model_name, None, txt_file)
         else:
-            wav = result
-        if isinstance(wav, list):
-            wav = np.array(wav)
-        audio = AudioSegment(
-            (wav * 32767).astype(np.int16).tobytes(),
-            frame_rate=44100,  # tăng sample rate
-            sample_width=2,
-            channels=1,
-        )
-        temp_wav = os.path.join(
-            tempfile.gettempdir(), f"tts_test_{uuid.uuid4().hex}.wav"
-        )
-        audio.export(temp_wav, format="wav")
-        play(audio)
-        os.startfile(temp_wav)
+            # Hiển thị thông báo
+            messagebox.showinfo("Test Voice", f"Đang tạo file âm thanh cho {len(speakers)} giọng của model {model_name}.\nQuá trình này có thể mất một chút thời gian.")
+            
+            # Tạo thread cho mỗi speaker
+            for speaker in speakers:
+                threading.Thread(
+                    target=test_for_model,
+                    args=(model_name, speaker, txt_file)
+                ).start()
+                
     except Exception as e:
-        messagebox.showerror("Lỗi", f"Không test được giọng: {e}")
+        print(f"Lỗi tổng thể trong test_voice: {str(e)}")
+        messagebox.showerror("Lỗi", f"Không test được giọng: {str(e)}")
+
+
+def test_for_model(model_name, speaker, txt_file):
+    """Tạo file âm thanh test cho một speaker cụ thể"""
+    try:
+        # Thiết lập các tham số cần thiết
+        speed = float(speed_var.get()) if speed_var else 0.9
+        
+        # Đọc nội dung file txt
+        with open(txt_file, "r", encoding="utf-8") as file:
+            text = file.read()
+        
+        # Rút gọn văn bản nếu quá dài để test nhanh hơn
+        if len(text) > 500:
+            text = text[:500] + "..."
+        
+        # Tạo tên file
+        base_filename = os.path.splitext(os.path.basename(txt_file))[0]
+        folder = os.path.dirname(txt_file)
+        safe_model = model_name.replace("/", "_")
+        
+        if speaker:
+            output_filename = os.path.join(folder, f"test_{safe_model}_{speaker.replace(' ', '_')}.mp3")
+        else:
+            output_filename = os.path.join(folder, f"test_{safe_model}.mp3")
+        
+        # Kiểm tra nếu file đã tồn tại
+        count = 1
+        original_output = output_filename
+        while os.path.exists(output_filename):
+            output_filename = original_output.replace(".mp3", f"_{count}.mp3")
+            count += 1
+        
+        # Sử dụng lại logic từ hàm convert_to_speech_thread để tạo file âm thanh
+        tts = get_tts(model_name)
+        
+        # Chia văn bản thành các đoạn nhỏ hơn nếu cần
+        chunks = chunk_text(text, max_chars=500)
+        audio_segments = []
+        
+        # Tạo âm thanh cho từng chunk
+        for i, chunk in enumerate(chunks):
+            temp_file = os.path.join(os.path.expanduser("~"), "TTS_Temp", f"temp_test_{uuid.uuid4()}.wav")
+            os.makedirs(os.path.dirname(temp_file), exist_ok=True)
+            
+            # Tạo âm thanh và lưu vào file tạm
+            try:
+                tts.tts_to_file(
+                    text=chunk,
+                    file_path=temp_file,
+                    speaker=speaker,
+                    speed=speed,
+                )
+            except TypeError:
+                tts.tts_to_file(
+                    text=chunk,
+                    file_path=temp_file,
+                    speaker=speaker,
+                )
+                
+            # Đọc file âm thanh tạm thời
+            segment = AudioSegment.from_wav(temp_file)
+            segment = segment.set_frame_rate(44100)  # tăng sample rate
+            audio_segments.append(segment)
+            
+            # Xóa file tạm
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+        
+        # Ghép các đoạn âm thanh
+        if audio_segments:
+            combined = audio_segments[0]
+            for seg in audio_segments[1:]:
+                combined += seg
+                
+            # Xuất file âm thanh
+            combined.export(output_filename, format="mp3")
+            print(f"Đã tạo file test: {output_filename}")
+            
+            # Hiển thị thông báo nếu đây là speaker cuối cùng
+            if speaker == speakers[-1] if speakers else True:
+                messagebox.showinfo("Hoàn thành", f"Đã tạo file test cho model {model_name}" + 
+                                                (f" với giọng {speaker}" if speaker else ""))
+    
+    except Exception as e:
+        print(f"Lỗi khi test cho {model_name} ({speaker}): {str(e)}")
+        messagebox.showerror("Lỗi", f"Không tạo được file test cho {speaker}: {str(e)}")
 
 
 def convert_to_speech_thread():
@@ -296,15 +382,18 @@ def main():
     progress_label = tk.Label(root, text="Đang xử lý: 0/0")
     progress_label.pack(pady=5)
 
-    # Thêm label cho ô nhập văn bản test
-    test_text_label = tk.Label(root, text="Nhập văn bản để test giọng:")
-    test_text_var = tk.StringVar(value="Hello, this is a sample voice!")
-    test_text_entry = tk.Entry(root, textvariable=test_text_var, width=40)
+    # Thay thế ô nhập văn bản test bằng nút test cho tất cả giọng
     test_button = tk.Button(
         root,
-        text="Test Voice",
+        text="Test Tất Cả Giọng",
         command=lambda: threading.Thread(target=test_voice).start(),
     )
+    test_button.pack(pady=15)
+
+    # Xóa các biến không cần thiết nữa
+    test_text_var = None
+    test_text_label = None
+    test_text_entry = None
 
     # Mặc định cập nhật speaker khi chọn model/ngôn ngữ
     language_var.trace_add("write", on_language_change)
