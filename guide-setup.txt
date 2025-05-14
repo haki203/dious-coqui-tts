@@ -1,0 +1,2 @@
+1. cai dat python moi nhat (uu tien 3.13)
+2. chay lenh C:\Users\ACER\Desktop\github\python\app> python create_shortcut.py
