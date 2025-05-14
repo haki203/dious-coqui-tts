@@ -226,7 +226,7 @@ def on_ok_click():
 def main():
     global txt_file_entry, language_var, model_var, model_menu, speaker_var, speaker_menu, speaker_label, test_button, ok_button, test_text_var, test_text_label, test_text_entry, speed_var, progress_var, progress_bar, progress_label
     root = tk.Tk()
-    root.title("Coqui TTS - Chuyển Văn Bản Thành Giọng Nói")
+    root.title("DIOUS tool TTS - Chuyển Văn Bản Thành Giọng Nói")
     root.geometry("500x700")
 
     txt_file_label = tk.Label(root, text="Chọn file .txt:")
