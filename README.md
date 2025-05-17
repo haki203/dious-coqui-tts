@@ -82,11 +82,14 @@ pip install -r requirements.txt
 **Lưu ý:**
 - Nếu gặp lỗi thiếu `ffmpeg`, hãy cài đặt ffmpeg (bắt buộc cho pydub):
   - Windows: tải tại https://ffmpeg.org/download.html, giải nén và thêm vào PATH.
-- Nếu bạn muốn luôn cài sẵn torch (dùng cho GPU hoặc một số model TTS), có thể thêm dòng sau vào requirements.txt:
-  ```txt
-  torch
+- Nếu bạn muốn cài torch (dùng cho GPU hoặc một số model TTS), hãy cài riêng bằng lệnh sau:
+  ```bash
+  pip install torch==2.5.1+cu121 --index-url https://download.pytorch.org/whl/cu121
   ```
-  Tuy nhiên, torch cũng có thể cài riêng theo hướng dẫn ở mục 6 để phù hợp với GPU của bạn.
+- Nếu máy bạn **không có GPU NVIDIA hoặc không hỗ trợ CUDA**, bạn vẫn có thể cài bản trên (torch sẽ tự động chạy trên CPU). Tuy nhiên, để tiết kiệm dung lượng, bạn có thể cài bản chỉ hỗ trợ CPU bằng lệnh:
+  ```bash
+  pip install torch==2.5.1+cpu --index-url https://download.pytorch.org/whl/cpu
+  ```
 - ffmpeg là phần mềm ngoài, bắt buộc phải cài để pydub hoạt động. Đã hướng dẫn chi tiết ở trên.
 - Các model TTS sẽ được tự động tải về khi bạn chọn lần đầu trong giao diện, không cần cài đặt thủ công.
 
